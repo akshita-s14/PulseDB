@@ -4,7 +4,7 @@
   "description": "Real-Time Database Event Streaming System",
   "main": "server/index.js",
   "scripts": {
-    "start": "node server/index.js",
+    "start": "node server/migrate.js && node server/index.js",
     "dev": "nodemon server/index.js",
     "db:setup": "psql $DATABASE_URL -f sql/schema.sql && psql $DATABASE_URL -f sql/triggers.sql"
   },
