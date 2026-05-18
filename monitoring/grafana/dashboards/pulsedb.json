@@ -1,0 +1,26 @@
+{
+  "title": "PulseDB Observability",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Active WebSocket Connections",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [{ "expr": "pulsedb_active_ws_connections", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Events Processed (Rate)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [{ "expr": "rate(pulsedb_events_processed_total[1m])", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Total Email Jobs Queued",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [{ "expr": "pulsedb_email_jobs_total", "refId": "A" }]
+    }
+  ],
+  "schemaVersion": 36,
+  "refresh": "5s",
+  "time": { "from": "now-5m", "to": "now" }
+}

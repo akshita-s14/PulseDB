@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PulseDB Dashboard</title>
+  <style>
+    /* Standard, clean CSS (Intern Level - Flat Design) */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f8f9fa;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    h1, h2, h3 { margin-top: 0; color: #2c3e50; }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e9ecef;
+    }
+
+    .status-box {
+      background: #e9ecef;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #dee2e6;
+    }
+    th {
+      background-color: #f1f3f5;
+      font-weight: 600;
+    }
+
+    .badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .badge-pending { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+    .badge-shipped { background: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+    .badge-delivered { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+
+    .priority-High { color: #dc3545; font-weight: bold; }
+    .priority-Normal { color: #28a745; font-weight: bold; }
+    .priority-Low { color: #6c757d; font-weight: bold; }
+
+    input, select, button {
+      padding: 8px 12px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-bottom: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .form-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .form-row input, .form-row select { width: auto; flex: 1; margin-bottom: 0; }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover { background-color: #0056b3; }
+    
+    .event-log {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      max-height: 250px;
+      overflow-y: auto;
+    }
+    .event-log li {
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 13px;
+    }
+    .event-log li:last-child { border-bottom: none; }
+
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>PulseDB Dashboard</h1>
+    <div class="status-box" id="conn-status">Connecting...</div>
+  </div>
+
+  <div class="grid-layout">
+    
+    <!-- Left Column: Data Table -->
+    <div>
+      <div class="card">
+        <h3>Live Orders Directory</h3>
+        
+        <!-- Added Search Functionality -->
+        <div class="form-row">
+          <input type="text" id="searchInput" placeholder="Search by Customer Name..." onkeyup="filterTable()">
+          <select id="statusFilter" onchange="filterTable()">
+            <option value="all">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="shipped">Shipped</option>
+            <option value="delivered">Delivered</option>
+          </select>
+        </div>
+
+        <table id="ordersTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Customer</th>
+              <th>Product</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Updated At</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+        <button id="loadMoreBtn" onclick="loadData(true)" style="display: none; margin-top: 15px; width: 100%; background: #6c757d; border-radius: 4px;">Load Older Orders</button>
+      </div>
+    </div>
+
+    <!-- Right Column: Forms and Logs -->
+    <div>
+      <div class="card">
+        <h3>Create New Order</h3>
+        <input type="text" id="custName" placeholder="Customer Name">
+        <input type="text" id="prodName" placeholder="Product Name">
+        <select id="orderPriority">
+          <option value="Normal">Normal Priority</option>
+          <option value="High">High Priority (Triggers Email)</option>
+          <option value="Low">Low Priority</option>
+        </select>
+        <button onclick="submitOrder()">Submit Order</button>
+        <button onclick="simulateAttack()" style="background-color: #dc3545; margin-top: 10px;">🚨 Simulate Velocity Attack (Demo AI)</button>
+      </div>
+
+      <div class="card">
+        <h3>System Statistics</h3>
+        <p>Total Orders Loaded: <b id="statTotal">0</b></p>
+        <p>Real-Time Events Received: <b id="statEvents">0</b></p>
+        <p style="font-size: 12px; color: #666;">Note: High priority orders automatically trigger an Ethereal Email notification.</p>
+      </div>
+
+      <div class="card">
+        <h3>Event Log</h3>
+        <ul class="event-log" id="logList"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let socket;
+  let eventCount = 0;
+  let lastEventTime = new Date().toISOString();
+  const orders = new Map();
+
+  let nextCursor = null;
+
+  // Load Initial Data (Now with Cursor-Based Pagination)
+  async function loadData() {
+    try {
+      const url = nextCursor ? `/api/orders?cursor=${nextCursor}` : `/api/orders`;
+      const res = await fetch(url);
+      const { data, nextCursor: newCursor } = await res.json();
+      
+      data.forEach(order => {
+        orders.set(order.id, order);
+        if(new Date(order.updated_at) > new Date(lastEventTime)) lastEventTime = order.updated_at;
+      });
+      
+      nextCursor = newCursor;
+      document.getElementById('loadMoreBtn').style.display = nextCursor ? 'block' : 'none';
+      
+      renderTable();
+    } catch (e) {
+      console.error('Failed to load data', e);
+    }
+  }
+
+  // Connect WebSocket
+  async function connectWS() {
+    try {
+      const authRes = await fetch('/api/auth/token', { method: 'POST' });
+      const { token } = await authRes.json();
+      
+      socket = new WebSocket(`ws://${location.host}?token=${token}`);
+      socket.onopen = () => {
+      document.getElementById('conn-status').textContent = 'Connected (Live)';
+      document.getElementById('conn-status').style.backgroundColor = '#d4edda';
+      document.getElementById('conn-status').style.color = '#155724';
+      
+      // Auto-sync missed events on reconnect
+      if (eventCount > 0) {
+        fetch(`/api/orders/sync?since=${lastEventTime}`)
+          .then(res => res.json())
+          .then(events => events.forEach(e => processEvent(e)));
+      }
+    };
+    
+    socket.onmessage = (msg) => {
+      const event = JSON.parse(msg.data);
+      if (event.type === 'INFO') {
+        // Simple info msg
+        return;
+      }
+      if (event.type === 'ANOMALY_ALERT') {
+        alert('🚨 AI FRAUD ALERT: ' + event.message);
+        addLog('🚨 AI ANOMALY DETECTED: ' + event.message);
+        return;
+      }
+      if (event.type === 'ORDER_EVENT') processEvent(event);
+    };
+
+    socket.onclose = () => {
+      document.getElementById('conn-status').textContent = 'Disconnected - Retrying...';
+      document.getElementById('conn-status').style.backgroundColor = '#f8d7da';
+      document.getElementById('conn-status').style.color = '#721c24';
+      setTimeout(connectWS, 2000);
+    };
+    } catch (e) {
+      console.error('Failed to authenticate WebSocket', e);
+      setTimeout(connectWS, 2000);
+    }
+  }
+
+  // Process Real-Time Event
+  function processEvent(event) {
+    const { operation, record, occurred_at } = event;
+    eventCount++;
+    document.getElementById('statEvents').textContent = eventCount;
+    lastEventTime = occurred_at;
+
+    addLog(`${operation} Order #${record.id} - ${record.customer_name}`);
+
+    if (operation === 'DELETE') {
+      orders.delete(record.id);
+    } else {
+      orders.set(record.id, record);
+    }
+    renderTable();
+  }
+
+  // Render HTML Table
+  function renderTable() {
+    const tbody = document.getElementById('tbody');
+    tbody.innerHTML = '';
+    let total = 0;
+
+    // Convert Map to Array and sort by ID descending (Latest first)
+    const sortedOrders = Array.from(orders.values()).sort((a,b) => b.id - a.id);
+
+    sortedOrders.forEach(order => {
+      total++;
+      const tr = document.createElement('tr');
+      // Adding dataset for client-side search filtering
+      tr.dataset.customer = order.customer_name.toLowerCase();
+      tr.dataset.status = order.status;
+
+      tr.innerHTML = `
+        <td>${order.id}</td>
+        <td>${order.customer_name}</td>
+        <td>${order.product_name}</td>
+        <td class="priority-${order.priority}">${order.priority}</td>
+        <td><span class="badge badge-${order.status}">${order.status}</span></td>
+        <td>${new Date(order.updated_at).toLocaleString()}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('statTotal').textContent = total;
+    filterTable(); // Re-apply filters if they exist
+  }
+
+  // Filter functionality (Functionality feature addition)
+  function filterTable() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const statusTerm = document.getElementById('statusFilter').value;
+    const rows = document.getElementById('tbody').getElementsByTagName('tr');
+
+    for (let i = 0; i < rows.length; i++) {
+      const custMatch = rows[i].dataset.customer.includes(searchTerm);
+      const statMatch = (statusTerm === 'all' || rows[i].dataset.status === statusTerm);
+      
+      if (custMatch && statMatch) {
+        rows[i].style.display = "";
+      } else {
+        rows[i].style.display = "none";
+      }
+    }
+  }
+
+  // Submit new order to REST API
+  async function submitOrder() {
+    const custName = document.getElementById('custName').value;
+    const prodName = document.getElementById('prodName').value;
+    const priority = document.getElementById('orderPriority').value;
+
+    if (!custName || !prodName) return alert('Fill out both fields!');
+
+    await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customer_name: custName, product_name: prodName, priority: priority })
+    });
+    
+    document.getElementById('custName').value = '';
+    document.getElementById('prodName').value = '';
+  }
+
+  // Simulate Velocity Attack (Demo for AI Anomaly)
+  async function simulateAttack() {
+    for(let i=1; i<=5; i++) {
+      fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_name: 'HackerBot', product_name: 'Stolen Goods ' + i, priority: 'High' })
+      });
+    }
+  }
+
+  // Add event log to UI
+  function addLog(msg) {
+    const ul = document.getElementById('logList');
+    const li = document.createElement('li');
+    li.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    ul.prepend(li);
+    if(ul.children.length > 20) ul.lastChild.remove();
+  }
+
+  // Initialize
+  loadData().then(connectWS);
+
+</script>
+</body>
+</html>
