@@ -23,8 +23,8 @@ To satisfy the problem statement requirements, the system has been dramatically 
 
 4. **Background Job Queues & Fault Tolerance (BullMQ)**:
    - Instead of blocking the Node.js event loop or silently failing when an external service is down, PulseDB uses **BullMQ** (backed by Redis) to handle heavy tasks like Email Notifications.
-   - High-priority orders are pushed to a Redis Queue. A background worker processes them asynchronously and utilizes an **Exponential Backoff Strategy** to retry failed email deliveries automatically.
-   - For demonstration, it integrates with Ethereal Email to generate real, previewable email links in the terminal without requiring complex SMTP setups.
+   - High-priority orders are pushed to a Redis Queue. A background worker processes them asynchronously and utilizes an **Exponential Backoff Strategy** to retry failed deliveries automatically.
+   - Built with environment awareness: if deployed on strict free-tier clouds (like Render) that block outbound SMTP, it intelligently catches the timeout and gracefully logs the AI-generated email payload directly to the server console.
 
 5. **Data Scalability (Cursor-Based Pagination)**:
    - To prevent memory leaks and massive payload transfers as the database grows, the primary API utilizes highly efficient cursor-based pagination (`?cursor=...&limit=10`).
@@ -59,6 +59,10 @@ To satisfy the problem statement requirements, the system has been dramatically 
 
 12. **Clean, Standardized UI Design**:
    - Built a highly accessible, standard enterprise UI without external frameworks to demonstrate raw CSS fundamentals. Features comprehensive client-side filtering, data tables, and toast alerts designed for maximum readability and speed.
+
+13. **Zero-Touch Cloud Deployment (Auto-Migration)**:
+   - Designed to deploy seamlessly to cloud PaaS providers like Render.com.
+   - Includes a custom `server/migrate.js` bootloader script that queries the Postgres `information_schema` on startup. If the database is empty, it automatically executes the SQL schema, trigger functions, and seed data before launching the main Express server.
 
 ## Tech Stack
 | Layer              | Technology              | Why                                |
