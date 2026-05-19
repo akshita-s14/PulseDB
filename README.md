@@ -114,6 +114,8 @@ npm start
 ```
 
 ## Testing Real-Time Updates
+> **Note:** The REST endpoints below are left public for demonstration purposes. However, all WebSocket connections are secured and require strict JWT authentication.
+
 ```bash
 # Create an order (triggers INSERT notification → browser updates instantly)
 curl -X POST http://localhost:3000/api/orders \
