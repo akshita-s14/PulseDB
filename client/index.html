@@ -230,7 +230,8 @@
       const authRes = await fetch('/api/auth/token', { method: 'POST' });
       const { token } = await authRes.json();
       
-      socket = new WebSocket(`ws://${location.host}?token=${token}`);
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      socket = new WebSocket(`${protocol}//${location.host}?token=${token}`);
       socket.onopen = () => {
       document.getElementById('conn-status').textContent = 'Connected (Live)';
       document.getElementById('conn-status').style.backgroundColor = '#d4edda';
