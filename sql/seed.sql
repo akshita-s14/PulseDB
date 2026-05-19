@@ -2,4 +2,7 @@
 INSERT INTO orders (customer_name, product_name, priority, status) VALUES
   ('Arjun Sharma',  'MacBook Pro M3',   'High',   'pending'),
   ('Priya Mehta',   'iPhone 15 Pro',    'Normal', 'shipped'),
-  ('Rohan Gupta',   'Sony WH-1000XM5',  'Low',    'delivered');
+  ('Rohan Gupta',   'Sony WH-1000XM5',  'Low',    'delivered'),
+  ('Aisha Khan', 'Dyson Airwrap', 'High', 'pending'),
+  ('Vikram Singh', 'Samsung Odyssey G9', 'Normal', 'pending'),
+  ('Neha Patel', 'Kindle Paperwhite', 'Low', 'shipped');

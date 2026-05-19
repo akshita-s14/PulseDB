@@ -5,6 +5,19 @@
 ## Overview
 PulseDB is a highly scalable, real-time notification system designed to push database changes to connected clients instantaneously. Built specifically for modern, robust event-driven architectures, it bypasses the massive overhead of polling entirely.
 
+## Architecture Diagram
+```mermaid
+graph TD
+    Client[Dashboard Client] -- WebSocket (JWT) --> Node[Node.js Server]
+    Node -- REST API --> DB[(PostgreSQL)]
+    DB -- "pg_notify('orders')" --> Node
+    Node -- enqueue job --> BullMQ[(Redis Queue)]
+    Worker[BullMQ Worker] -- process job --> BullMQ
+    Worker -- API Call --> Gemini[Google Gemini API]
+    Prometheus[Prometheus] -- scrape /metrics --> Node
+    Grafana[Grafana] -- query --> Prometheus
+```
+
 ### Architectural Decisions & Evaluation Criteria Addressed
 To satisfy the problem statement requirements, the system has been dramatically enhanced:
 
@@ -24,7 +37,7 @@ To satisfy the problem statement requirements, the system has been dramatically 
 4. **Background Job Queues & Fault Tolerance (BullMQ)**:
    - Instead of blocking the Node.js event loop or silently failing when an external service is down, PulseDB uses **BullMQ** (backed by Redis) to handle heavy tasks like Email Notifications.
    - High-priority orders are pushed to a Redis Queue. A background worker processes them asynchronously and utilizes an **Exponential Backoff Strategy** to retry failed deliveries automatically.
-   - Built with environment awareness: if deployed on strict free-tier clouds (like Render) that block outbound SMTP, it intelligently catches the timeout and gracefully logs the AI-generated email payload directly to the server console.
+   - Uses Ethereal Email for zero-configuration demo email previews — no SMTP server required. Preview URLs are logged to the server console.
 
 5. **Data Scalability (Cursor-Based Pagination)**:
    - To prevent memory leaks and massive payload transfers as the database grows, the primary API utilizes highly efficient cursor-based pagination (`?cursor=...&limit=10`).
@@ -62,7 +75,7 @@ To satisfy the problem statement requirements, the system has been dramatically 
 
 13. **Zero-Touch Cloud Deployment (Auto-Migration)**:
    - Designed to deploy seamlessly to cloud PaaS providers like Render.com.
-   - Includes a custom `server/migrate.js` bootloader script that queries the Postgres `information_schema` on startup. If the database is empty, it automatically executes the SQL schema, trigger functions, and seed data before launching the main Express server.
+   - Includes a custom `server/migrate.js` bootloader script that queries the Postgres `information_schema` on startup. It checks for the existence of the `orders` table specifically before running migrations; if not found, it automatically executes the SQL schema, trigger functions, and seed data before launching the main Express server.
 
 ## Tech Stack
 | Layer              | Technology              | Why                                |
@@ -71,12 +84,33 @@ To satisfy the problem statement requirements, the system has been dramatically 
 | Backend            | Node.js + Express       | Non-blocking, event-driven I/O     |
 | Real-time          | WebSocket (ws)          | Full-duplex, low overhead          |
 | Scalability        | Redis Pub/Sub           | Horizontal scaling message bus     |
+| Background Jobs    | BullMQ                  | Robust job queues with auto-retries|
+| AI Integration     | Google Gemini 1.5 Flash | Fraud detection & NLP summaries    |
+| Observability      | Prometheus + Grafana    | Production-grade metrics tracking  |
 | UI                 | Vanilla JS + CSS3       | High performance, zero bloat       |
 
 ## Quick Start (Docker — recommended)
 ```bash
 docker compose up --build
 # Open http://localhost:3000
+```
+> **Note:** Grafana is available at `http://localhost:3001` when running via Docker Compose locally.
+
+## Run Without Docker
+If you want to run the stack natively without Docker:
+```bash
+# 1. Start Postgres and Redis locally
+# 2. Set environment variables
+export DATABASE_URL="postgresql://user:pass@localhost:5432/pulsedb"
+export REDIS_URL="redis://localhost:6379"
+export GEMINI_API_KEY="your-key"
+export JWT_SECRET="your-secret"
+
+# 3. Install dependencies
+npm install
+
+# 4. Start the server (auto-runs migrations)
+npm start
 ```
 
 ## Testing Real-Time Updates
